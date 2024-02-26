@@ -1,19 +1,23 @@
 import json
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-
+from dotenv import load_dotenv
 
 from db import DB
 from user_crud import UserRepo
 from models import User
-from utils import (
+from utils.data_manager_functions import (
         add_user,
         get_all_users,
         get_user_by_id,
         update_user,
         delete_user
 )
+from utils.ai_functions import ai_DB_manager
 
+load_dotenv() # Load environment variables from .env file
+
+# Create a new FastAPI instance
 app = FastAPI()
 
 
@@ -21,6 +25,21 @@ app = FastAPI()
 def read_root():
     return {"Hello": "World"}
 
+
+# # Chatbot endpoint
+@app.post("/ai-driven")
+def ai_driven_chatbot(
+    user_question: str
+):
+    try:
+        ai_message = ai_DB_manager(user_question)
+        return JSONResponse(content={"message": f"{ai_message}", "user_question": f"{user_question}"}, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
+
+
+
+## User CRUD endpoints
 @app.get("/users")
 def get_users():
     structured_users = []
