@@ -1,49 +1,100 @@
+import json
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+
 from db import DB
 from user_crud import UserRepo
 from models import User
 from utils import (
-                    add_user,
-                    get_all_users,
-                    get_user_by_id,
-                    update_user,
-                    delete_user)
+        add_user,
+        get_all_users,
+        get_user_by_id,
+        update_user,
+        delete_user
+)
+
+app = FastAPI()
 
 
-user_example = {
-    "name": "Example_4",
-    "email": "in_utils@email.co"
-}
-user_example_for_update = {
-    #"name": "EndyB",
-    "email": "updated@email.co"
-}
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
+@app.get("/users")
+def get_users():
+    structured_users = []
+    try:
+        users = get_all_users()
+        for user in users:
+            structured_users.append({
+                "id": user.id if user.id else None,
+                "name": user.name if user.name else None,
+                "email": user.email if user.email else None
+            })
+        return JSONResponse(content=structured_users, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
 
-def main():
-    # Add user
-    # user = add_user(user=user_example)
+@app.get("/user/{user_id}")
+def get_one_user(user_id: int):
+    try:
+        user = get_user_by_id(user_id)
+        if isinstance(user, User):
+            return JSONResponse(content={
+                "id": user.id if user.id else None,
+                "name": user.name if user.name else None,
+                "email": user.email if user.email else None
+            }, status_code=200)
+        else:
+            return JSONResponse(content={"error": str(user)}, status_code=400)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
     
-    # Get all users
-    users = get_all_users()
-    for user in users:
-        print(user.id, user.name, user.email)
-    
-    # Update user
-    user = update_user(2, user_example_for_update)
-    if isinstance(user, User):
-        print(user.id, user.name, user.email)
-    else:
-        print(user)
 
-    # Get user by id
-    user = get_user_by_id(2)
-    if isinstance(user, User):
-        print(user.id, user.name, user.email)
-    else:
-        print(user)
+@app.post("/user")
+def create_user(
+    user: dict
+):
+    try:
+        add_response = add_user(user)
+        user_obj = UserRepo().fetch_last_added(user['name'])
+        if user_obj:
+            return JSONResponse(
+                content= {
+                    "message": f"{add_response}",
+                    "data": [
+                        {
+                            "id": user_obj.id if user_obj.id else None,
+                            "name": user_obj.name if user_obj.name else None,
+                            "email": user_obj.email if user_obj.email else None
+                        }
+                    ]
+                },
+                status_code=201)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
 
-    # Delete user
-    user = UserRepo().delete(2)
-    print(user)
 
-main()
+@app.put("/user/{user_id}")
+def update_one_user(
+    user_id: int,
+    user_data: dict
+):
+    try:
+        serialized_user_data = json.dumps(user_data)
+        if not user_data or len(user_data) == 0:
+            raise Exception("No data to update")
+        user_updated_message = update_user(user_id, json.loads(serialized_user_data))
+        return JSONResponse(content={"message": user_updated_message}, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
+
+
+@app.delete("/user/{user_id}")
+def delete_one_user(user_id: int):
+    try:
+        user_deleted_message = delete_user(user_id)
+        return JSONResponse(content={"message": user_deleted_message}, status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
