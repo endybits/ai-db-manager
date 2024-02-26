@@ -5,7 +5,10 @@ from dotenv import load_dotenv
 
 from utils.data_manager_functions import (
         add_user as create_user,
-        get_all_users
+        get_all_users,
+        get_user_by_id,
+        update_user,
+        delete_user
 )
 from models import User
 
@@ -15,14 +18,14 @@ load_dotenv() # Load environment variables from .env file
 
 client = OpenAI()
 
-def add_user(user: dict):
+def add_user_with_ai(user: dict):
     action = f"Adding user: {user}"
     print(action)
     result = create_user(user)
     print(result)
     return result
 
-def list_users():
+def list_users_with_ai():
     action = "Getting all users..."
     print(action)
     user_list = []
@@ -35,13 +38,38 @@ def list_users():
         })
     return user_list
 
+def get_user_with_ai(user_id: int):
+    action = f"Getting user with id {user_id}"
+    print(action)
+    user = get_user_by_id(user_id)
+    if isinstance(user, User):
+        return {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    return user
+
+def update_user_with_ai(user_id: int, user: dict):
+    action = f"Updating user with id {user_id}"
+    print(action)
+    result = update_user(user_id, user)
+    print(result)
+    return result
+
+def delete_user_with_ai(user_id: int):
+    action = f"Deleting user with id {user_id}"
+    print(action)
+    result = delete_user(user_id)
+    print(result)
+    return result
 
 def ai_DB_manager(user_question: str):
     tools = [
         {
             "type": "function",
             "function": {
-                "name": "add_user",
+                "name": "add_user_with_ai",
                 "description": "Create a user in the database",
                 "parameters": {
                     "type": "object",
@@ -67,10 +95,74 @@ def ai_DB_manager(user_question: str):
         {
             "type": "function",
             "function": {
-                "name": "list_users",
+                "name": "list_users_with_ai",
                 "description": "Get all users from the database",
             }
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_user_with_ai",
+                "description": "Get a user from the database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "integer",
+                            "description": "The id of the user"
+                        }
+                    },
+                    "required": ["user_id"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_user_with_ai",
+                "description": "Update a user in the database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "integer",
+                            "description": "The id of the user"
+                        },
+                        "user": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the user"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "The email of the user"
+                                }
+                            }
+                        }
+                    },
+                    "required": ["user_id", "user"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "delete_user_with_ai",
+                "description": "Delete a user from the database",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "user_id": {
+                            "type": "integer",
+                            "description": "The id of the user"
+                        }
+                    },
+                    "required": ["user_id"]
+                }
+            }
+        }
     ]
     messages = [
             {
@@ -93,8 +185,11 @@ def ai_DB_manager(user_question: str):
     tool_calls = response_message.tool_calls
     if tool_calls:
         available_functions = {
-            "add_user": add_user,
-            "list_users": list_users
+            "add_user_with_ai": add_user_with_ai,
+            "list_users_with_ai": list_users_with_ai,
+            "get_user_with_ai": get_user_with_ai,
+            "update_user_with_ai": update_user_with_ai,
+            "delete_user_with_ai": delete_user_with_ai
         }
         messages.append(response_message)
 
