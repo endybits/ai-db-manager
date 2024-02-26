@@ -1,15 +1,23 @@
 from db import DB
 from user_crud import UserRepo
+from models import User
+from utils import (
+                    add_user,
+                    get_all_users,
+                    get_user_by_id,
+                    update_user,
+                    delete_user)
 
-add_user = UserRepo().add
 
 user_example = {
-    "name": "Endy",
-    "email": "eb_updated_azul@email.co"
+    "name": "Example_4",
+    "email": "in_utils@email.co"
+}
+user_example_for_update = {
+    #"name": "EndyB",
+    "email": "updated@email.co"
 }
 
-def get_all_users():
-    return UserRepo().fetch_all()
 
 def main():
     # Add user
@@ -21,12 +29,19 @@ def main():
         print(user.id, user.name, user.email)
     
     # Update user
-    user = UserRepo().update(2, user_example)
+    user = update_user(2, user_example_for_update)
+    if isinstance(user, User):
+        print(user.id, user.name, user.email)
+    else:
+        print(user)
 
     # Get user by id
-    user = UserRepo().fetch_by_id(2)
-    print(user.id, user.name, user.email)
-    
+    user = get_user_by_id(2)
+    if isinstance(user, User):
+        print(user.id, user.name, user.email)
+    else:
+        print(user)
+
     # Delete user
     user = UserRepo().delete(2)
     print(user)
