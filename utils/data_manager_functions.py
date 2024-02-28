@@ -1,3 +1,5 @@
+import asyncio
+
 from user_crud import UserRepo
 
 def add_user(user: dict):
@@ -14,7 +16,8 @@ def get_user_by_id(user_id: int):
 
 
 def update_user(user_id: int, user: dict):
-    return UserRepo().update(user_id, user)
+    updated_data = UserRepo().update(user_id, user)
+    return updated_data
 
 def delete_user(user_id: int) -> str:
     return UserRepo().delete(user_id)

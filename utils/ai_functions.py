@@ -1,5 +1,5 @@
 import json
-import os
+import asyncio
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -174,14 +174,15 @@ def ai_DB_manager(user_question: str):
                 "content": "User question: " + user_question
             }
         ]
-    response = client.chat.completions.create(
+    response =  client.chat.completions.create(
         model="gpt-4-0125-preview",
         messages=messages,
         tools=tools
     )
-    
     response_message = response.choices[0].message
-    
+    print("***************************")
+    print("Response message: \n", response_message)
+    print("***************************")
     tool_calls = response_message.tool_calls
     if tool_calls:
         available_functions = {
@@ -192,7 +193,6 @@ def ai_DB_manager(user_question: str):
             "delete_user_with_ai": delete_user_with_ai
         }
         messages.append(response_message)
-
         for tool_call in tool_calls:
             print("Tool call: \n", tool_call)
             function_name = tool_call.function.name
@@ -208,10 +208,14 @@ def ai_DB_manager(user_question: str):
             }
             print("Message content: \n", message_content)
             messages.append(message_content)
-            
+            print("***************************")
+            print("First response: \n", function_response)
+            print("***************************")
             second_response = client.chat.completions.create(
                 model="gpt-4-0125-preview",
                 messages=messages,
             )
+            
         return second_response.choices[0].message.content
+    print("***************************")
     return response_message.content
