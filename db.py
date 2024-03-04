@@ -31,6 +31,6 @@ class DB:
         finally:
             db_session.close()
 
-# db = DB()
+db = DB()
 
-# db.create_database()
+db.create_database()

@@ -18,18 +18,18 @@ load_dotenv() # Load environment variables from .env file
 
 client = OpenAI()
 
-def add_user_with_ai(user: dict):
+async def add_user_with_ai(user: dict):
     action = f"Adding user: {user}"
     print(action)
-    result = create_user(user)
+    result = await create_user(user)
     print(result)
     return result
 
-def list_users_with_ai():
+async def list_users_with_ai():
     action = "Getting all users..."
     print(action)
     user_list = []
-    result = get_all_users()
+    result = await get_all_users()
     for user in result:
         user_list.append({
             "id": user.id,
@@ -38,10 +38,10 @@ def list_users_with_ai():
         })
     return user_list
 
-def get_user_with_ai(user_id: int):
+async def get_user_with_ai(user_id: int):
     action = f"Getting user with id {user_id}"
     print(action)
-    user = get_user_by_id(user_id)
+    user = await get_user_by_id(user_id)
     if isinstance(user, User):
         return {
             "id": user.id,
@@ -50,21 +50,21 @@ def get_user_with_ai(user_id: int):
         }
     return user
 
-def update_user_with_ai(user_id: int, user: dict):
+async def update_user_with_ai(user_id: int, user: dict):
     action = f"Updating user with id {user_id}"
     print(action)
-    result = update_user(user_id, user)
+    result = await update_user(user_id, user)
     print(result)
     return result
 
-def delete_user_with_ai(user_id: int):
+async def delete_user_with_ai(user_id: int):
     action = f"Deleting user with id {user_id}"
     print(action)
-    result = delete_user(user_id)
+    result = await delete_user(user_id)
     print(result)
     return result
 
-def ai_DB_manager(user_question: str):
+async def ai_DB_manager(user_question: str):
     tools = [
         {
             "type": "function",
@@ -198,7 +198,7 @@ def ai_DB_manager(user_question: str):
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(**function_args)
+            function_response = await function_to_call(**function_args)
             function_response = json.dumps(function_response)
             message_content = {
                 "tool_call_id": tool_call.id,

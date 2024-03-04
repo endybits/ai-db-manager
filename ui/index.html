@@ -188,11 +188,14 @@
                     class="chat-input-textarea"
                     placeholder="Type your message here..."
                 ></textarea>
-                <button class="chat-input-send", id="chat-input-send">Send</button>
+                <button class="chat-input-send" id="chat-input-send">Send</button>
             </div>
         </footer>
     </div>
     <script>
+        const currentTime = new Date().toLocaleTimeString();
+        console.log(currentTime);
+        
         // const ws = new WebSocket('ws://localhost:8000/ws/ai/chat');
         const url = 'http://127.0.0.1:8000/ai-driven';
         function fillChatBubble(message, sender) {
@@ -213,36 +216,8 @@
             chatContainer.appendChild(chatBubble);
         }
 
-        // function fetchChatData() {
-        //     fetch(url)
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             console.log(data);
-        //             fillChatBubble(data.message, 'AI');
-        //         });
-        // }
-
-        // On send button click
-        // document.getElementById('chat-input-send').addEventListener('click', function() {
-        //     let userMessage = document.querySelector('.chat-input-textarea').value;
-        //     fillChatBubble(userMessage, 'user');
-        //     document.querySelector('.chat-input-textarea').value = '';
-        //     // Send text message to server
-        //     fetch(url, {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json'
-        //         },
-        //         body: JSON.stringify({ "user_question": userMessage })
-        //     })
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             console.log(data);
-        //             fillChatBubble(data.message, 'AI');
-        //         });
-        // });
-
-        document.getElementById('chat-input-send').addEventListener('click', async function() {
+        document.getElementById('chat-input-send').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent form submission
             let userMessage = document.querySelector('.chat-input-textarea').value;
             fillChatBubble(userMessage, 'user');
             document.querySelector('.chat-input-textarea').value = '';
@@ -251,17 +226,24 @@
             const params = {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'accept': 'application/json'
                 },
                 body: JSON.stringify({"user_question": userMessage})
             };
+            console.log(params);
             fetch(url, params)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');}
+                    console.log(response)
+                    return response.json();
+                })
                 .then(data => {
                     console.log(data);
-                    showdown = new showdown.Converter();
-                    let html_response = showdown.makeHtml(data.message);
-                    fillChatBubble(html_response, 'AI');
+                    // showdown = new showdown.Converter();
+                    // let html_response = showdown.makeHtml(data.message);
+                    fillChatBubble(data.message, 'ai');
                 })
                 .catch(error => {
                     console.error('Error:', error);

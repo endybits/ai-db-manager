@@ -7,12 +7,13 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 from db import DB
-from user_crud import UserRepo
+from utils.user_crud import UserRepo
 from models import User
 from utils.data_manager_functions import (
         add_user,
         get_all_users,
         get_user_by_id,
+        get_last_user_added,
         update_user,
         delete_user
 )
@@ -22,9 +23,11 @@ load_dotenv() # Load environment variables from .env file
 
 
 class Question(BaseModel):
-    user_question: str = Field(..., title="User question", description="The question asked by the user")
+    user_input: str = Field(..., title="User question", description="The question asked by the user")
 
-
+class User(BaseModel):
+    name: str = Field(..., title="User name", description="The name of the user")
+    email: str = Field(None, title="User email", description="The email of the user")
 
 
 # Create a new FastAPI instance
@@ -68,13 +71,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # # Chatbot endpoint
 @app.post("/ai-driven")
-def ai_driven_chatbot(
+async def ai_driven_chatbot(
     question: Question
 ):
     try:
-        user_question = question.user_question
+        user_question = question.user_input
         print(f"User question: {user_question}")
-        ai_message = ai_DB_manager(user_question)
+        ai_message = await ai_DB_manager(user_question)
         return JSONResponse(content={"message": f"{ai_message}", "user_question": f"{user_question}"}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=400)
@@ -85,10 +88,10 @@ def ai_driven_chatbot(
 
 # List all users
 @app.get("/users")
-def get_users():
+async def get_users():
     structured_users = []
     try:
-        users = get_all_users()
+        users = await get_all_users()
         for user in users:
             structured_users.append({
                 "id": user.id if user.id else None,
@@ -102,9 +105,9 @@ def get_users():
 
 # Get one user by id
 @app.get("/user/{user_id}")
-def get_one_user(user_id: int):
+async def get_one_user(user_id: int):
     try:
-        user = get_user_by_id(user_id)
+        user = await get_user_by_id(user_id)
         if isinstance(user, User):
             return JSONResponse(content={
                 "id": user.id if user.id else None,
@@ -118,13 +121,13 @@ def get_one_user(user_id: int):
 
 
 # Create a new user
-@app.post("/user")
-def create_user(
+@app.post("/user")  
+async def create_user(
     user: dict
 ):
     try:
-        add_response = add_user(user)
-        user_obj = UserRepo().fetch_last_added(user['name'])
+        add_response = await add_user(user)
+        user_obj = await get_last_user_added(user['name'])
         if user_obj:
             return JSONResponse(
                 content= {
@@ -144,7 +147,7 @@ def create_user(
 
 # Update one user
 @app.put("/user/{user_id}")
-def update_one_user(
+async def update_one_user(
     user_id: int,
     user_data: dict
 ):
@@ -152,7 +155,7 @@ def update_one_user(
         serialized_user_data = json.dumps(user_data)
         if not user_data or len(user_data) == 0:
             raise Exception("No data to update")
-        user_updated_message = update_user(user_id, json.loads(serialized_user_data))
+        user_updated_message = await update_user(user_id, json.loads(serialized_user_data))
         return JSONResponse(content={"message": user_updated_message}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=400)
@@ -160,9 +163,9 @@ def update_one_user(
 
 # Delete one user
 @app.delete("/user/{user_id}")
-def delete_one_user(user_id: int):
+async def delete_one_user(user_id: int):
     try:
-        user_deleted_message = delete_user(user_id)
+        user_deleted_message = await delete_user(user_id)
         return JSONResponse(content={"message": user_deleted_message}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=400)
